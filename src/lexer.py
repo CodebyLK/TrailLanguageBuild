@@ -1,47 +1,69 @@
 import re
 
-# Define the token types and their regex patterns
 TOKEN_SPECIFICATION = [
-    ('VAR',        r'var\b'),                 # Trail assignment keyword
-    ('PRINT',      r'print\b'),               # Print keyword
-    ('INTEGER',    r'\d+'),                   # Integer literals like 5, 42, 1000
-    ('IDENTIFIER', r'[a-zA-Z][a-zA-Z0-9]*'),  # Variables like x or total1
-    ('PLUS',       r'\+'),                    # Addition
-    ('MINUS',      r'-'),                     # Subtraction
-    ('STAR',       r'\*'),                    # Multiplication
-    ('SLASH',      r'/'),                     # Division
-    ('EQUAL',      r'='),                     # Assignment
-    ('SEMICOLON',  r';'),                     # Statement terminator
-    ('LPAREN',     r'\('),                    # Left Parenthesis
-    ('RPAREN',     r'\)'),                    # Right Parenthesis
-    ('SKIP',       r'[ \t\n]+'),              # Whitespace (ignored)
+    ('COMMENT',    r'#.*'),                   # Single-line comments
+    ('FLOAT',      r'\d+\.\d+'),              # Floating-point numbers
+    ('INTEGER',    r'\d+'),                   # Integers
+    ('STRING',     r'"[^"]*"'),               # Strings
+    ('IF',         r'\bif\b'),                # Keywords...
+    ('THEN',       r'\bthen\b'),
+    ('ELSE',       r'\belse\b'),
+    ('END',        r'\bend\b'),
+    ('WHILE',      r'\bwhile\b'),
+    ('DO',         r'\bdo\b'),
+    ('BREAK',      r'\bbreak\b'),
+    ('FUNCTION',   r'\bfunction\b'),
+    ('RETURN',     r'\breturn\b'),
+    ('VAR',        r'\bvar\b'),
+    ('PRINT',      r'\bprint\b'),
+    ('INPUT',      r'\binput\b'),
+    ('AND',        r'\band\b'),
+    ('OR',         r'\bor\b'),
+    ('NOT',        r'\bnot\b'),
+    ('TRUE',       r'\bTrue\b|\btrue\b'),
+    ('FALSE',      r'\bFalse\b|\bfalse\b'),
+    ('IDENTIFIER', r'[a-zA-Z_][a-zA-Z0-9_]*'),# Variable names
+    ('EQ',         r'=='),                    # Multi-char operators
+    ('NEQ',        r'!='),
+    ('LEQ',        r'<='),
+    ('GEQ',        r'>='),
+    ('LT',         r'<'),
+    ('GT',         r'>'),
+    ('PLUS',       r'\+'),                    # Single-char operators
+    ('MINUS',      r'-'),
+    ('STAR',       r'\*'),
+    ('SLASH',      r'/'),
+    ('MOD',        r'%'),
+    ('EQUAL',      r'='),                     # <--- Fixed: r'=' instead of r='='
+    ('LPAREN',     r'\('),
+    ('RPAREN',     r'\)'),
+    ('LBRACKET',   r'\['),
+    ('RBRACKET',   r'\]'),
+    ('COMMA',      r','),
+    ('SEMICOLON',  r';'),                     # Kept for flexibility
+    ('SKIP',       r'[ \t\n\r]+'),            # Whitespace and newlines
     ('MISMATCH',   r'.'),                     # Unknown character
 ]
 
 def tokenize(code):
-    # Combine all individual regex patterns into one master pattern
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in TOKEN_SPECIFICATION)
-    
     tokens = []
+    line_num = 1
+    
     for mo in re.finditer(tok_regex, code):
         kind = mo.lastgroup
         value = mo.group()
         
-        if kind == 'SKIP':
-            continue  # Ignore whitespace
-        elif kind == 'MISMATCH':
-            raise RuntimeError(f'Unexpected character: {value}') # Terminate on unknown characters
-        else:
-            tokens.append((kind, value))
+        # Keep track of lines for error reporting
+        if '\n' in value:
+            line_num += value.count('\n')
             
-    # The specification requires an EOF token at the end
-    tokens.append(('EOF', 'EOF'))
-    
+        if kind in ('SKIP', 'COMMENT'):
+            continue
+        elif kind == 'MISMATCH':
+            raise RuntimeError(f"Lexical Error on line {line_num}: Unexpected character '{value}'")
+        else:
+            tokens.append((kind, value, line_num))
+            
+    tokens.append(('EOF', 'EOF', line_num))
     return tokens
-
-# Test for tokenizer
-if __name__ == '__main__':
-    sample_code = "var x = 5; print(x);"
-    tokens = tokenize(sample_code)
-    for token in tokens:
-        print(token)

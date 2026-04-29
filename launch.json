@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Trail (Active File)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/trail.py",
+            "cwd": "${workspaceFolder}/src",
+            "console": "integratedTerminal",
+            "args": ["run", "${file}"] 
+        }
+    ]
+}
