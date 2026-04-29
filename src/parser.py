@@ -5,21 +5,34 @@ class Parser:
         self.tokens = tokens
         self.pos = 0
 
-    def current_token(self): return self.tokens[self.pos]
-    def current_type(self): return self.current_token()[0]
+    def current_token(self): 
+        return self.tokens[self.pos]
+        
+    def current_type(self): 
+        return self.current_token()[0]
     
     def consume(self, expected_type):
         if self.current_type() == expected_type:
             token = self.current_token()
             self.pos += 1
-            # Optional semicolons for flexibility
             if self.current_type() == 'SEMICOLON': 
                 self.pos += 1
             return token
         else:
             token_val = self.current_token()[1]
             line = self.current_token()[2]
-            raise RuntimeError(f"Syntax Error on line {line}: Expected {expected_type}, got '{token_val}'")
+            
+            # --- TRAIL TUTOR SYNTAX ERRORS ---
+            if expected_type == 'SEMICOLON':
+                raise RuntimeError(f"Syntax Error on line {line}: It looks like you forgot to finish your thought. In Trail, statements need to end with a semicolon (;), and blocks need to close with 'end'. Double-check your formatting!")
+            elif expected_type == 'RPAREN':
+                raise RuntimeError(f"Syntax Error on line {line}: You opened a parenthesis '(' but the language got confused before finding the closing ')'. Make sure every open parenthesis has a matching partner!")
+            elif expected_type == 'END':
+                raise RuntimeError(f"Syntax Error on line {line}: It looks like you started a block (like 'if' or 'while') but forgot to close it. Make sure to type 'end' at the bottom of the block.")
+            elif expected_type == 'IDENTIFIER':
+                raise RuntimeError(f"Syntax Error on line {line}: The language expected a variable name here, but found '{token_val}' instead. Make sure your variable names start with a letter!")
+            else:
+                raise RuntimeError(f"Syntax Error on line {line}: Expected '{expected_type}', but found '{token_val}'.")
 
     def parse_program(self):
         statements = []
@@ -42,7 +55,6 @@ class Parser:
             self.consume('BREAK')
             return BreakStatement()
         elif token_type == 'IDENTIFIER':
-            # Could be assignment or function call statement
             return self.parse_identifier_statement()
         else:
             raise RuntimeError(f"Syntax Error on line {self.current_token()[2]}: Unexpected statement start '{self.current_token()[1]}'")
@@ -81,7 +93,7 @@ class Parser:
             return FunctionCall(name, args)
         else:
             line = self.current_token()[2]
-            raise RuntimeError(f"Syntax Error on line {line}: Expected assignment or function call after '{name}'")
+            raise RuntimeError(f"Syntax Error on line {line}: Expected assignment (=) or function call after '{name}'")
 
     def parse_print(self):
         self.consume('PRINT')
@@ -130,7 +142,6 @@ class Parser:
         expr = self.parse_expression() if self.current_type() not in ('SEMICOLON', 'END') else None
         return ReturnStatement(expr)
 
-    # Expression parsing with precedence
     def parse_expression(self): return self.parse_or()
 
     def parse_or(self):
@@ -192,7 +203,7 @@ class Parser:
             return Literal(int(value))
         elif token_type == 'STRING':
             self.consume('STRING')
-            return Literal(value[1:-1])  # Strip quotes
+            return Literal(value[1:-1])
         elif token_type in ('TRUE', 'FALSE'):
             self.consume(token_type)
             return Literal(value.lower() == 'true')
