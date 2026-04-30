@@ -31,8 +31,9 @@ class Environment:
             raise TrailTutorError(f"Scope Error: You tried to use the variable '{name}', but it hasn't been created yet. Did you misspell it, or did you forget to initialize it first using 'var {name} = ...'?")
 
 class Interpreter:
-    def __init__(self):
+    def __init__(self, input_hook=input):
         self.env = Environment()
+        self.input_hook = input_hook
 
     def interpret(self, node):
         try:
@@ -55,10 +56,8 @@ class Interpreter:
             for stmt in node.statements:
                 self.visit(stmt, env)
         except BreakException:
-            # --- TUTOR: MISPLACED BREAK ---
             raise TrailTutorError("Flow Error: You used a 'break' statement outside of a loop! 'break' is only used to escape a 'while' loop.")
         except ReturnException:
-            # --- TUTOR: MISPLACED RETURN ---
             raise TrailTutorError("Flow Error: You used a 'return' statement outside of a function! 'return' is only meant to send a value back from a function.")
 
     def visit_VarDeclaration(self, node, env):
@@ -126,7 +125,6 @@ class Interpreter:
         except ReturnException as r:
             return r.value
         except BreakException:
-            # Catch a break that escaped a loop inside a function
             raise TrailTutorError("Flow Error: You used a 'break' statement outside of a loop! 'break' is only used to escape a 'while' loop.")
         return None
 
@@ -169,7 +167,6 @@ class Interpreter:
     def visit_UnaryExpression(self, node, env):
         right = self.visit(node.right, env)
         
-        # --- TUTOR: UNARY TYPE SAFETY ---
         if node.operator == '-': 
             if not isinstance(right, (int, float)) or isinstance(right, bool):
                 raise TrailTutorError(f"Type Mismatch: You tried to make a {type(right).__name__} negative using '-'. You can only make numbers negative!")
@@ -194,9 +191,11 @@ class Interpreter:
 
     def visit_InputExpression(self, node, env):
         prompt = self.visit(node.prompt_expr, env)
-        user_in = input(str(prompt))
         
-        # --- TUTOR: SMART CASTING FOR BEGINNERS ---
+        user_in = self.input_hook(str(prompt))
+        if user_in is None:
+            user_in = ""
+            
         try:
             if '.' in user_in: return float(user_in)
             return int(user_in)

@@ -15,9 +15,7 @@ class Parser:
         if self.current_type() == expected_type:
             token = self.current_token()
             self.pos += 1
-            if self.current_type() == 'SEMICOLON': 
-                self.pos += 1
-            return token
+            return token # REMOVED the auto-skip semicolon leniency here!
         else:
             token_val = self.current_token()[1]
             line = self.current_token()[2]
@@ -37,9 +35,6 @@ class Parser:
     def parse_program(self):
         statements = []
         while self.current_type() != 'EOF':
-            if self.current_type() == 'SEMICOLON':
-                self.pos += 1
-                continue
             statements.append(self.parse_statement())
         return Program(statements)
 
@@ -53,6 +48,7 @@ class Parser:
         elif token_type == 'RETURN': return self.parse_return()
         elif token_type == 'BREAK':
             self.consume('BREAK')
+            self.consume('SEMICOLON') # STRICT ENFORCEMENT
             return BreakStatement()
         elif token_type == 'IDENTIFIER':
             return self.parse_identifier_statement()
@@ -62,9 +58,6 @@ class Parser:
     def parse_block(self, end_tokens):
         statements = []
         while self.current_type() not in end_tokens and self.current_type() != 'EOF':
-            if self.current_type() == 'SEMICOLON':
-                self.pos += 1
-                continue
             statements.append(self.parse_statement())
         return statements
 
@@ -73,23 +66,29 @@ class Parser:
         name = self.consume('IDENTIFIER')[1]
         self.consume('EQUAL')
         expr = self.parse_expression()
+        self.consume('SEMICOLON') # STRICT ENFORCEMENT
         return VarDeclaration(Identifier(name), expr)
 
     def parse_identifier_statement(self):
         name = self.consume('IDENTIFIER')[1]
         if self.current_type() == 'EQUAL':
             self.consume('EQUAL')
-            return Assignment(Identifier(name), None, self.parse_expression())
+            expr = self.parse_expression()
+            self.consume('SEMICOLON') # STRICT ENFORCEMENT
+            return Assignment(Identifier(name), None, expr)
         elif self.current_type() == 'LBRACKET':
             self.consume('LBRACKET')
             index_expr = self.parse_expression()
             self.consume('RBRACKET')
             self.consume('EQUAL')
-            return Assignment(Identifier(name), index_expr, self.parse_expression())
+            expr = self.parse_expression()
+            self.consume('SEMICOLON') # STRICT ENFORCEMENT
+            return Assignment(Identifier(name), index_expr, expr)
         elif self.current_type() == 'LPAREN':
             self.consume('LPAREN')
             args = self.parse_arguments()
             self.consume('RPAREN')
+            self.consume('SEMICOLON') # STRICT ENFORCEMENT
             return FunctionCall(name, args)
         else:
             line = self.current_token()[2]
@@ -100,6 +99,7 @@ class Parser:
         self.consume('LPAREN')
         expr = self.parse_expression()
         self.consume('RPAREN')
+        self.consume('SEMICOLON') # STRICT ENFORCEMENT
         return PrintStatement(expr)
 
     def parse_if(self):
@@ -140,6 +140,7 @@ class Parser:
     def parse_return(self):
         self.consume('RETURN')
         expr = self.parse_expression() if self.current_type() not in ('SEMICOLON', 'END') else None
+        self.consume('SEMICOLON') # STRICT ENFORCEMENT
         return ReturnStatement(expr)
 
     def parse_expression(self): return self.parse_or()

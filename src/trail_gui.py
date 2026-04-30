@@ -5,35 +5,29 @@ from lexer import tokenize
 from parser import Parser
 from interpreter import Interpreter
 
-# Set the modern theme baseline
 ctk.set_appearance_mode("dark")
 
 class TrailIDE(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        # --- Custom Monochromatic Blue Palette ---
         bg_color = "#1B2845"
         editor_bg = "#274060"
         btn_bg = "#4C86C0"
         btn_hover = "#65AFFF"
         text_color = "#FFFFFF"
-        # Using a darker shade of the background for the console to create depth
         console_bg = "#0B111D" 
         console_fg = "#5899E2"
 
         self.title("Trail Language Editor")
         self.geometry("900x700")
         
-        # Apply the main background color
         self.configure(fg_color=bg_color)
 
-        # Configure the grid so the text boxes expand perfectly when you resize the window
         self.grid_rowconfigure(1, weight=1) 
         self.grid_rowconfigure(4, weight=1) 
         self.grid_columnconfigure(0, weight=1)
 
-        # --- Code Editor Section ---
         self.editor_label = ctk.CTkLabel(
             self, text="Trail Source Code", font=ctk.CTkFont(size=16, weight="bold"), text_color=text_color
         )
@@ -46,7 +40,6 @@ class TrailIDE(ctk.CTk):
         self.editor.grid(row=1, column=0, padx=20, pady=(0, 10), sticky="nsew")
         self.editor.insert("0.0", 'var grade = 85;\n\nif grade >= 60 then\n    print("You passed!");\nelse\n    print("Try again!");\nend\n')
 
-        # --- Run Button ---
         self.run_btn = ctk.CTkButton(
             self, text="▶ Run Trail Code", font=ctk.CTkFont(size=15, weight="bold"), 
             height=40, corner_radius=8, command=self.run_code,
@@ -54,7 +47,6 @@ class TrailIDE(ctk.CTk):
         )
         self.run_btn.grid(row=2, column=0, padx=20, pady=10)
 
-        # --- Console Output Section ---
         self.console_label = ctk.CTkLabel(
             self, text="Tutor Console Output", font=ctk.CTkFont(size=16, weight="bold"), text_color=text_color
         )
@@ -73,6 +65,10 @@ class TrailIDE(ctk.CTk):
         if not source_code:
             return
 
+        def gui_input(prompt_text):
+            dialog = ctk.CTkInputDialog(text=prompt_text, title="Trail Input Request")
+            return dialog.get_input()
+
         old_stdout = sys.stdout
         captured_output = io.StringIO()
         sys.stdout = captured_output
@@ -82,7 +78,7 @@ class TrailIDE(ctk.CTk):
             parser = Parser(tokens)
             ast_root = parser.parse_program()
             
-            interpreter = Interpreter()
+            interpreter = Interpreter(input_hook=gui_input)
             interpreter.interpret(ast_root)
             
         except Exception as e:

@@ -1,63 +1,91 @@
-***
+# Trail Language - Final Implementation
 
-# Trail Language - Phase 1: Lexer and Parser
+**Trail** is a high-level, interpreted programming language designed as a pedagogical bridge between human logic and machine execution. Built specifically to lower the cognitive barrier for computer science students, Trail focuses on readability, strict logical enforcement, and a highly informative diagnostic system.
 
-**Trail** is a high-level, interpreted language designed as a pedagogical bridge between human logic and machine execution. It is built with a focus on readability, helpful diagnostics, and simplicity to optimize the learning experience for computer science students.
-
-This repository contains Phase 1 of the Trail implementation, which includes a working lexical analyzer (lexer), a recursive descent parser, and an Abstract Syntax Tree (AST) generator.
+This repository contains the Final Phase implementation of Trail, progressing from the Phase 1 Lexer/Parser into a fully Turing-complete language with a custom tree-walking evaluator, interactive desktop IDE, and the "Tutor" error-handling system.
 
 ## 📁 Repository Structure
 
-Based on the project requirements, the repository is organized as follows:
-
 * **`src/`**: Contains the core language implementation.
   * **`trail.py`**: The main command-line interface (CLI) entry point.
-  * **`lexer.py`**: Contains the `tokenize` function using Python's regular expressions.
-  * **`parser.py`**: The handwritten recursive descent parser that builds the AST.
-  * **`ast_nodes.py`**: Defines the object structures for the AST nodes.
-  * **`printer.py`**: Contains the utility to print the AST in an indented tree format.
-* **`tests/`**: A directory containing 10 valid `.ml` test programs and 5 invalid test programs.
+  * **`lexer.py`**: Contains the scanner, tokenizing code via regular expressions with protections for unclosed strings.
+  * **`parser.py`**: A handwritten recursive descent parser that translates tokens into the AST.
+  * **`ast_nodes.py`**: Defines the strongly-typed object structures for the AST nodes.
+  * **`interpreter.py`**: The tree-walking evaluator that executes the AST and houses the pedagogical "Tutor" safety nets.
+  * **`trail_gui.py`**: The modern desktop IDE built using `customtkinter`.
+* **`tests/`**: A directory containing valid `.ml` test programs (to demonstrate logic, loops, and functions) and invalid test programs (to demonstrate the Tutor's error interventions).
 * **`README.md`**: Project documentation and execution instructions.
 
 ## 🚀 How to Run
 
-The tool is exposed through a simple command-line interface. You can run it using Python 3 from the root directory of the project.
+Trail can be executed either through its dedicated graphical IDE or via the traditional command-line interface. 
 
-### 1. Lexical Analysis (Tokenization)
-To read a source file and produce a stream of tokens, use the `lex` command:
+### 1. The Trail IDE (Recommended)
+The project includes a modern, dark-mode desktop editor. Ensure you are working within a virtual environment, install the UI dependency, and launch the editor:
 ```bash
-python src/trail.py lex tests/test1_valid.ml
+pip install customtkinter
+python src/trail_gui.py
 ```
 
-### 2. Parsing (AST Generation)
-To read a source file, tokenize it, parse it according to the grammar rules, and output the indented Abstract Syntax Tree, use the `parse` command:
+### 2. Command-Line Execution
+To run Trail scripts directly from the terminal, use the `run` command:
 ```bash
-python src/trail.py parse tests/test1_valid.ml
+python src/trail.py run tests/test14_whileloop_valid.ml
 ```
 
-*Note: If the parser encounters a syntax error, it implements a "fail-fast" immediate abort and prints a simple error message.*
+*You can also still access Phase 1 pipeline tools:*
+* `python src/trail.py lex <file>` : Outputs the raw token stream.
+* `python src/trail.py parse <file>` : Outputs the indented Abstract Syntax Tree.
+
+## 🌟 Core Language Features
+
+* **The Tutor Interpreter:** Instead of failing with obscure Python stack traces, Trail intercepts common beginner mistakes (scope confusion, type mismatches, out-of-bounds array access, misplaced flow control) and provides plain-text, contextual explanations to teach the student how to fix their code.
+* **Dynamic but Strong Typing:** Variables can hold any data type and be reassigned dynamically. However, implicit type coercion is strictly forbidden. Adding a String to an Integer will trigger a Tutor error, forcing the student to understand distinct data structures.
+* **First-Class Functions:** Supports user-defined functions with localized scope, parameter passing, and return values.
+* **Dynamic Data Structures:** Natively supports heterogeneous arrays/lists with index-based access and modification.
 
 ## 📜 Language Grammar (EBNF)
 
-The parser implements strict precedence and associativity (left-associative with standard mathematical precedence). The Phase 1 subset of the Trail grammar is defined as follows:
+The parser implements strict precedence and associativity. The finalized Trail grammar is defined as follows:
 
 ```ebnf
 program       → statement* EOF
-statement     → assignment | print_stmt
-assignment    → 'var' IDENTIFIER '=' expression ';'
+statement     → var_decl | assignment | print_stmt | if_stmt | while_stmt | func_decl | return_stmt | break_stmt | expr_stmt
+var_decl      → 'var' IDENTIFIER '=' expression ';'
+assignment    → IDENTIFIER ('[' expression ']')? '=' expression ';'
 print_stmt    → 'print' '(' expression ')' ';'
-expression    → term (('+' | '-') term)*
-term          → factor (('*' | '/') factor)*
-factor        → INTEGER | IDENTIFIER | '(' expression ')'
+if_stmt       → 'if' expression 'then' statement* ('else' statement*)? 'end'
+while_stmt    → 'while' expression 'do' statement* 'end'
+func_decl     → 'function' IDENTIFIER '(' parameters? ')' statement* 'end'
+parameters    → IDENTIFIER (',' IDENTIFIER)*
+return_stmt   → 'return' expression? ';'
+break_stmt    → 'break' ';'
+expr_stmt     → expression ';'
+
+expression    → logical_or
+logical_or    → logical_and ('or' logical_and)*
+logical_and   → equality ('and' equality)*
+equality      → relational (('==' | '!=') relational)*
+relational    → additive (('<' | '>' | '<=' | '>=') additive)*
+additive      → term (('+' | '-') term)*
+term          → factor (('*' | '/' | '%') factor)*
+unary         → ('-' | 'not') unary | factor
+factor        → INTEGER | FLOAT | STRING | 'true' | 'false' | IDENTIFIER 
+              | list_literal | list_access | function_call | input_call | '(' expression ')'
+
+list_literal  → '[' arguments? ']'
+list_access   → IDENTIFIER '[' expression ']'
+function_call → IDENTIFIER '(' arguments? ')'
+input_call    → 'input' '(' expression ')'
+arguments     → expression (',' expression)*
 ```
-*Note: Whitespace is ignored during lexical analysis. Identifiers must start with an alphabetic character followed by alphanumeric characters.*
 
 ## 🏗️ Architecture Overview
 
-The Phase 1 pipeline follows a classic compiler frontend model: `Source Code → Lexer → Tokens → Parser → AST → Printed Representation`.
+The final pipeline expands on the Phase 1 compiler frontend by attaching a semantic execution backend: `Source Code → Lexer → Parser → AST → Interpreter → Standard Output`.
 
-1.  **Lexer (Scanner):** Implemented using Python's `re` (RegEx) module. It scans the raw source code string and converts it into a sequence of meaningful tokens (e.g., `VAR`, `IDENTIFIER`, `INTEGER`, `PLUS`).
-2.  **Parser:** A handwritten Recursive Descent (Top-Down) parser. It maps each grammar rule directly to a Python function (e.g., `parse_expression`, `parse_term`). This avoids external dependencies and allows for highly customized error handling.
-3.  **Abstract Syntax Tree (AST):** The parser outputs a structured object model representing the logical execution flow of the code. Instead of strings, the tree consists of strongly-typed nodes like `BinaryExpression` and `AssignmentStatement`. 
-
-***
+1. **Lexer (Scanner):** Converts raw strings into meaningful tokens, catching lexical typos (like unclosed quotes).
+2. **Parser (Recursive Descent):** Maps grammar rules directly to Python functions. It enforces strict structural rules (e.g., matching parentheses and block closures).
+3. **Abstract Syntax Tree (AST):** A strongly-typed object model representing the logical flow.
+4. **Interpreter (Tree-Walker):** Traverses the AST to execute the program. It manages the `Environment` (memory and variable scoping) and evaluates expressions. It is wrapped in the `TrailTutorError` architecture to safely intercept and explain illegal operations at runtime.
+5. **GUI Wrapper:** Routes standard output (`sys.stdout`) from the Python console into a modernized `customtkinter` text widget to provide a seamless user experience.
