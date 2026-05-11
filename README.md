@@ -1,91 +1,91 @@
-# Trail Language - Final Implementation
 
-**Trail** is a high-level, interpreted programming language designed as a pedagogical bridge between human logic and machine execution. Built specifically to lower the cognitive barrier for computer science students, Trail focuses on readability, strict logical enforcement, and a highly informative diagnostic system.
 
-This repository contains the Final Phase implementation of Trail, progressing from the Phase 1 Lexer/Parser into a fully Turing-complete language with a custom tree-walking evaluator, interactive desktop IDE, and the "Tutor" error-handling system.
+# 🛤️ Trail Language & Studio IDE
 
-## 📁 Repository Structure
+Trail is a high-level, interpreted programming language designed as a pedagogical bridge between human logic and machine execution. Accompanied by **Trail Studio**, a custom-built, hardware-accelerated IDE, this project demonstrates a complete, from-scratch pipeline: from raw character tokenization to Abstract Syntax Tree (AST) evaluation and visual execution.
 
-* **`src/`**: Contains the core language implementation.
-  * **`trail.py`**: The main command-line interface (CLI) entry point.
-  * **`lexer.py`**: Contains the scanner, tokenizing code via regular expressions with protections for unclosed strings.
-  * **`parser.py`**: A handwritten recursive descent parser that translates tokens into the AST.
-  * **`ast_nodes.py`**: Defines the strongly-typed object structures for the AST nodes.
-  * **`interpreter.py`**: The tree-walking evaluator that executes the AST and houses the pedagogical "Tutor" safety nets.
-  * **`trail_gui.py`**: The modern desktop IDE built using `customtkinter`.
-* **`tests/`**: A directory containing valid `.ml` test programs (to demonstrate logic, loops, and functions) and invalid test programs (to demonstrate the Tutor's error interventions).
-* **`README.md`**: Project documentation and execution instructions.
+## 📐 Architecture Overview
 
-## 🚀 How to Run
+The Trail engine is built natively in Python and operates without third-party parsing libraries. It follows a strict, three-phase compilation pipeline:
 
-Trail can be executed either through its dedicated graphical IDE or via the traditional command-line interface. 
+1. **Lexer (`lexer.py`):** Consumes raw source code strings and generates a stream of categorized, structural `Tokens`.
+2. **Parser (`parser.py`):** Processes tokens using recursive descent to enforce Trail's grammar rules, outputting a formalized Abstract Syntax Tree (AST).
+3. **Interpreter (`interpreter.py`):** Traverses the AST, managing variable state, evaluating mathematical/logical expressions, and executing programmatic side effects (like `print`).
 
-### 1. The Trail IDE (Recommended)
-The project includes a modern, dark-mode desktop editor. Ensure you are working within a virtual environment, install the UI dependency, and launch the editor:
+## 🖥️ Trail Studio (The IDE)
+
+Trail includes a dedicated, frameless desktop environment built with `PyQt6`. Designed to mimic professional development environments, it provides a distraction-free workspace for writing and testing Trail code.
+
+**Key IDE Features:**
+* **Custom Frameless UI:** Overrides the native OS window manager for a seamless, edge-to-edge "Deep Blue" workspace.
+* **Hardware-Accelerated Rendering:** Utilizes Qt's rendering engine for subpixel font smoothing and sharp UI geometry.
+* **Live File Explorer:** Integrates directly with the local file system to manage `.ml` project files.
+* **Dynamic Syntax Highlighting:** Real-time regex-based token coloring for Trail keywords, strings, and numeric literals.
+* **Pedagogical Cookbook:** Built-in code templates (Hello World, Loops, Conditionals) allow users to instantly load and study syntax examples.
+* **Human-Readable Traces:** Execution errors are caught and printed in high-contrast red in the integrated console to facilitate learning and debugging.
+
+## ⚙️ Installation & Setup
+
+To run Trail Studio locally, you need Python installed along with the PyQt6 framework for the UI.
+
 ```bash
-pip install customtkinter
+# 1. Create a virtual environment (Recommended)
+python -m venv env
+
+# 2. Activate the environment
+# Windows:
+env\Scripts\activate
+# Mac/Linux:
+source env/bin/activate
+
+# 3. Install the UI Engine
+pip install PyQt6
+
+# 4. Launch Trail Studio
 python src/trail_gui.py
+
 ```
 
-### 2. Command-Line Execution
-To run Trail scripts directly from the terminal, use the `run` command:
-```bash
-python src/trail.py run tests/test14_whileloop_valid.ml
+## 📖 Trail Syntax Examples
+
+Trail is designed to be highly readable, favoring explicit block closures (`end`) over curly braces to help beginners visualize scope.
+
+### Variable Assignment & Output
+
+```lua
+var status = "Trail Engine Online";
+var version = 2.0;
+
+print(status);
+
 ```
 
-*You can also still access Phase 1 pipeline tools:*
-* `python src/trail.py lex <file>` : Outputs the raw token stream.
-* `python src/trail.py parse <file>` : Outputs the indented Abstract Syntax Tree.
+### Conditionals
 
-## 🌟 Core Language Features
+```lua
+var code = 200;
 
-* **The Tutor Interpreter:** Instead of failing with obscure Python stack traces, Trail intercepts common beginner mistakes (scope confusion, type mismatches, out-of-bounds array access, misplaced flow control) and provides plain-text, contextual explanations to teach the student how to fix their code.
-* **Dynamic but Strong Typing:** Variables can hold any data type and be reassigned dynamically. However, implicit type coercion is strictly forbidden. Adding a String to an Integer will trigger a Tutor error, forcing the student to understand distinct data structures.
-* **First-Class Functions:** Supports user-defined functions with localized scope, parameter passing, and return values.
-* **Dynamic Data Structures:** Natively supports heterogeneous arrays/lists with index-based access and modification.
+if code == 200 then
+    print("Execution Successful");
+else
+    print("Execution Failed");
+end
 
-## 📜 Language Grammar (EBNF)
-
-The parser implements strict precedence and associativity. The finalized Trail grammar is defined as follows:
-
-```ebnf
-program       → statement* EOF
-statement     → var_decl | assignment | print_stmt | if_stmt | while_stmt | func_decl | return_stmt | break_stmt | expr_stmt
-var_decl      → 'var' IDENTIFIER '=' expression ';'
-assignment    → IDENTIFIER ('[' expression ']')? '=' expression ';'
-print_stmt    → 'print' '(' expression ')' ';'
-if_stmt       → 'if' expression 'then' statement* ('else' statement*)? 'end'
-while_stmt    → 'while' expression 'do' statement* 'end'
-func_decl     → 'function' IDENTIFIER '(' parameters? ')' statement* 'end'
-parameters    → IDENTIFIER (',' IDENTIFIER)*
-return_stmt   → 'return' expression? ';'
-break_stmt    → 'break' ';'
-expr_stmt     → expression ';'
-
-expression    → logical_or
-logical_or    → logical_and ('or' logical_and)*
-logical_and   → equality ('and' equality)*
-equality      → relational (('==' | '!=') relational)*
-relational    → additive (('<' | '>' | '<=' | '>=') additive)*
-additive      → term (('+' | '-') term)*
-term          → factor (('*' | '/' | '%') factor)*
-unary         → ('-' | 'not') unary | factor
-factor        → INTEGER | FLOAT | STRING | 'true' | 'false' | IDENTIFIER 
-              | list_literal | list_access | function_call | input_call | '(' expression ')'
-
-list_literal  → '[' arguments? ']'
-list_access   → IDENTIFIER '[' expression ']'
-function_call → IDENTIFIER '(' arguments? ')'
-input_call    → 'input' '(' expression ')'
-arguments     → expression (',' expression)*
 ```
 
-## 🏗️ Architecture Overview
+### Iteration (While Loops)
 
-The final pipeline expands on the Phase 1 compiler frontend by attaching a semantic execution backend: `Source Code → Lexer → Parser → AST → Interpreter → Standard Output`.
+```lua
+var count = 1;
 
-1. **Lexer (Scanner):** Converts raw strings into meaningful tokens, catching lexical typos (like unclosed quotes).
-2. **Parser (Recursive Descent):** Maps grammar rules directly to Python functions. It enforces strict structural rules (e.g., matching parentheses and block closures).
-3. **Abstract Syntax Tree (AST):** A strongly-typed object model representing the logical flow.
-4. **Interpreter (Tree-Walker):** Traverses the AST to execute the program. It manages the `Environment` (memory and variable scoping) and evaluates expressions. It is wrapped in the `TrailTutorError` architecture to safely intercept and explain illegal operations at runtime.
-5. **GUI Wrapper:** Routes standard output (`sys.stdout`) from the Python console into a modernized `customtkinter` text widget to provide a seamless user experience.
+while count < 5 do
+    print(count);
+    var count = count + 1;
+end
+
+```
+
+## 🛡️ Error Handling
+
+A core requirement of Trail's design is comprehensive error handling. The language engine is built to catch logical impossibilities (like adding numbers to strings) and syntactical mistakes, reporting them gracefully to the IDE terminal rather than crashing the host Python process.
+

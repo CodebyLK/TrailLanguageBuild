@@ -1,3 +1,4 @@
+import difflib
 from ast_nodes import *
 
 class TrailTutorError(Exception): pass
@@ -20,7 +21,17 @@ class Environment:
         elif self.parent:
             self.parent.assign(name, value)
         else:
-            raise TrailTutorError(f"Scope Error: You tried to update the variable '{name}', but it hasn't been created yet. Did you mean to initialize it with 'var {name} = ...'?")
+            # Typo Catcher for Assignment
+            known_vars = list(self.vars.keys())
+            closest_match = difflib.get_close_matches(name, known_vars, n=1, cutoff=0.6)
+
+            error_msg = f"Scope Error: You tried to update the variable '{name}', but it hasn't been created yet."
+            if closest_match:
+                error_msg += f" Did you mean '{closest_match[0]}'?"
+            else:
+                error_msg += f" Did you mean to initialize it with 'var {name} = ...'?"
+
+            raise TrailTutorError(error_msg)
 
     def get(self, name):
         if name in self.vars:
@@ -28,7 +39,17 @@ class Environment:
         elif self.parent:
             return self.parent.get(name)
         else:
-            raise TrailTutorError(f"Scope Error: You tried to use the variable '{name}', but it hasn't been created yet. Did you misspell it, or did you forget to initialize it first using 'var {name} = ...'?")
+            # Typo Catcher for Retrieval
+            known_vars = list(self.vars.keys())
+            closest_match = difflib.get_close_matches(name, known_vars, n=1, cutoff=0.6)
+
+            error_msg = f"Scope Error: You tried to use the variable '{name}', but it hasn't been created yet."
+            if closest_match:
+                error_msg += f" Did you mean '{closest_match[0]}'?"
+            else:
+                error_msg += f" Did you misspell it, or did you forget to initialize it first using 'var {name} = ...'?"
+
+            raise TrailTutorError(error_msg)
 
 class Interpreter:
     def __init__(self, input_hook=input):
